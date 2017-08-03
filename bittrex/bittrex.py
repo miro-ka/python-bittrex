@@ -18,6 +18,8 @@ SELL_ORDERBOOK = 'sell'
 BOTH_ORDERBOOK = 'both'
 
 BASE_URL = 'https://bittrex.com/api/v1.1/%s/'
+V2BASE_URL = 'https://bittrex.com/api/v2.0/%s/'
+
 
 MARKET_SET = {'getopenorders', 'cancel', 'sellmarket', 'selllimit', 'buymarket', 'buylimit'}
 
@@ -32,7 +34,7 @@ class Bittrex(object):
         self.api_key = str(api_key) if api_key is not None else ''
         self.api_secret = str(api_secret) if api_secret is not None else ''
 
-    def api_query(self, method, options=None):
+    def api_query(self, method, options=None, version='v1.1'):
         """
         Queries Bittrex with given method and options
 
@@ -42,6 +44,9 @@ class Bittrex(object):
         :param options: Extra options for query
         :type options: dict
 
+        :param version: API version
+        :type options: str
+
         :return: JSON response from Bittrex
         :rtype : dict
         """
@@ -50,17 +55,26 @@ class Bittrex(object):
         nonce = str(int(time.time() * 1000))
         method_set = 'public'
 
+        if version == 'v1.1':
+            root_url = BASE_URL
+            method_set_url = method_set
+        elif version == 'v2.0':
+            root_url = V2BASE_URL
+            method_set_url = 'pub'
+
         if method in MARKET_SET:
             method_set = 'market'
         elif method in ACCOUNT_SET:
             method_set = 'account'
 
-        request_url = (BASE_URL % method_set) + method + '?'
+        request_url = (root_url % method_set_url) + method + '?'
 
         if method_set != 'public':
             request_url += 'apikey=' + self.api_key + "&nonce=" + nonce + '&'
 
         request_url += urlencode(options)
+
+        print('bittrex api:', request_url)
 
         return requests.get(
             request_url,
@@ -326,7 +340,7 @@ class Bittrex(object):
 
     def get_order_history(self, market, count):
         """
-        Used to reterieve order trade history of account
+        Used to retrieve order trade history of account
 
         /account/getorderhistory
 
@@ -340,4 +354,23 @@ class Bittrex(object):
         :rtype : dict
 
         """
-        return self.api_query('getorderhistory', {'market':market, 'count': count})
+        return self.api_query('getorderhistory', {'market': market, 'count': count})
+
+    def get_ticks(self, market, tick_interval):
+        """
+        Used to retrieve history ticks
+
+        /market/GetTicks
+
+        :param market: optional a string literal for the market (ie. BTC-LTC). If ommited, will return for all markets
+        :type market: str
+
+        :param tick_interval: valid values (oneMin, fiveMin, thirtyMin, hour and day)
+        :type count: int
+
+        :return: tick history in JSON
+        :rtype : dict
+
+        """
+        print('from bittrex api:', market, tick_interval)
+        return self.api_query('market/getticks', {'marketName': market, 'tickInterval': tick_interval}, version='v2.0')
