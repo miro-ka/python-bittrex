@@ -53,28 +53,25 @@ class Bittrex(object):
         if not options:
             options = {}
         nonce = str(int(time.time() * 1000))
-        method_set = 'public'
 
         if version == 'v1.1':
             root_url = BASE_URL
-            method_set_url = method_set
+            method_set = 'public'
         elif version == 'v2.0':
             root_url = V2BASE_URL
-            method_set_url = 'pub'
+            method_set = 'pub'
 
         if method in MARKET_SET:
             method_set = 'market'
         elif method in ACCOUNT_SET:
             method_set = 'account'
 
-        request_url = (root_url % method_set_url) + method + '?'
+        request_url = (root_url % method_set) + method + '?'
 
-        if method_set != 'public':
+        if method_set not in ['public', 'pub']:
             request_url += 'apikey=' + self.api_key + "&nonce=" + nonce + '&'
 
         request_url += urlencode(options)
-
-        print('bittrex api:', request_url)
 
         return requests.get(
             request_url,
