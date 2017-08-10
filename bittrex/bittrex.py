@@ -72,11 +72,21 @@ class Bittrex(object):
             request_url += 'apikey=' + self.api_key + "&nonce=" + nonce + '&'
 
         request_url += urlencode(options)
+        # print('bittrex request url:', request_url)
 
-        return requests.get(
-            request_url,
-            headers={"apisign": hmac.new(self.api_secret.encode(), request_url.encode(), hashlib.sha512).hexdigest()}
-        ).json()
+        response = None
+        try:
+            response = requests.get(
+                request_url,
+                timeout=30,
+                headers={"apisign": hmac.new(self.api_secret.encode(), request_url.encode(), hashlib.sha512).hexdigest()}
+            ).json()
+        except requests.exceptions.Timeout as e:
+            print('Got Timeout exception:' + str(e))
+        except ValueError as e:
+            print('Got ValueError exception:' + str(e) + '. Response:' + str(response))
+
+        return response
 
     def get_markets(self):
         """
@@ -369,5 +379,5 @@ class Bittrex(object):
         :rtype : dict
 
         """
-        print('from bittrex api:', market, tick_interval)
+        # print('from bittrex api:', market, tick_interval)
         return self.api_query('market/getticks', {'marketName': market, 'tickInterval': tick_interval}, version='v2.0')
